@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>قنبلة اللمّة | Lamma Bomb – لعبة سهرات عائلية بموبايل واحد</title>
+<meta name="description" content="قنبلة اللمّة: لعبة جماعية عائلية بموبايل واحد. أسئلة سريعة، قنبلة بتوقيت سري، وعجلة أحكام كوميدية. بدون إنترنت وبدون تسجيل.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@500;700;800&family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root{ --amber:#f59e0b; --gold:#fbbf24; --coral:#f43f5e; --pulse:1s; --shake:0px; }
+  html,body{ margin:0; min-height:100%; }
+  body{
+    font-family:'Cairo',sans-serif; color:#f1f5f9; background:#0f172a;
+    background-image:
+      radial-gradient(60% 40% at 50% 0%, rgba(245,158,11,.14), transparent 70%),
+      radial-gradient(50% 40% at 90% 100%, rgba(244,63,94,.12), transparent 70%);
+    background-attachment:fixed; -webkit-tap-highlight-color:transparent; overflow-x:hidden;
+  }
+  h1,h2,h3,.display{ font-family:'Alexandria','Cairo',sans-serif; }
+  .glass{ background:rgba(15,23,42,.8); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+    border:1px solid rgba(251,191,36,.15); box-shadow:0 10px 40px rgba(0,0,0,.35); }
+  .ad-slot{ height:90px; display:flex; align-items:center; justify-content:center; border:1px dashed rgba(148,163,184,.25);
+    border-radius:16px; color:rgba(148,163,184,.5); font-size:12px; overflow:hidden; }
+  .screen{ display:none; } .screen.active{ display:block; animation:fadeUp .4s ease; }
+  @keyframes fadeUp{ from{opacity:0; transform:translateY(12px)} to{opacity:1; transform:none} }
+  .pack{ transition:.2s; cursor:pointer; text-align:right; }
+  .pack.sel{ border-color:#fbbf24; background:rgba(245,158,11,.14); box-shadow:0 0 0 2px rgba(251,191,36,.35); }
+  .dur.sel{ background:linear-gradient(135deg,#f59e0b,#f43f5e); color:#fff; border-color:transparent; }
+  .btn-main{ background:linear-gradient(135deg,#f59e0b,#f43f5e); color:#fff; font-family:'Alexandria',sans-serif; font-weight:800;
+    box-shadow:0 10px 30px rgba(244,63,94,.35); transition:transform .08s; }
+  .btn-main:active{ transform:scale(.96); }
+  /* Bomb */
+  #bombWrap{ animation:shake .12s infinite; }
+  @keyframes shake{
+    0%{transform:translate(0,0)} 25%{transform:translate(var(--shake),calc(var(--shake)*-.6))}
+    50%{transform:translate(calc(var(--shake)*-1),var(--shake))} 75%{transform:translate(calc(var(--shake)*.7),calc(var(--shake)*.5))} 100%{transform:translate(0,0)} }
+  #bombBody{ transform-origin:50% 60%; animation:pulse var(--pulse) ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{transform:scale(1)} 50%{transform:scale(1.06)} }
+  .spark{ transform-origin:center; animation:spark .25s infinite alternate; }
+  @keyframes spark{ from{opacity:.55; transform:scale(.8) rotate(0)} to{opacity:1; transform:scale(1.25) rotate(40deg)} }
+  .qcard{ animation:pop .3s ease; }
+  @keyframes pop{ from{opacity:0; transform:scale(.94)} to{opacity:1; transform:scale(1)} }
+  /* Explosion */
+  body.flash{ animation:flash .9s ease-out; }
+  @keyframes flash{ 0%{background:#ef4444} 100%{background:#0f172a} }
+  .camshake{ animation:camshake .7s; }
+  @keyframes camshake{ 0%,100%{transform:translate(0)} 10%{transform:translate(-18px,10px)} 20%{transform:translate(16px,-14px)} 30%{transform:translate(-14px,-10px)}
+    40%{transform:translate(14px,12px)} 50%{transform:translate(-10px,8px)} 60%{transform:translate(8px,-8px)} 80%{transform:translate(-4px,3px)} }
+  .boomText{ animation:boomIn .6s cubic-bezier(.2,1.6,.4,1); }
+  @keyframes boomIn{ from{transform:scale(.2); opacity:0} to{transform:scale(1); opacity:1} }
+  details>summary{ cursor:pointer; list-style:none; } details>summary::-webkit-details-marker{ display:none; }
+  details[open] .chev{ transform:rotate(180deg); } .chev{ transition:.2s; }
+  .modal{ display:none; position:fixed; inset:0; z-index:50; background:rgba(2,6,23,.8); align-items:center; justify-content:center; padding:16px; }
+  .modal.open{ display:flex; }
+  @media (prefers-reduced-motion:reduce){ #bombWrap,#bombBody,.spark{ animation:none } }
+</style>
+</head>
+<body>
+<div id="root" class="max-w-md mx-auto px-4 pt-3 pb-10">
+
+  <!-- Ad slot top (reserved: zero CLS) -->
+  <div class="ad-slot mb-3" aria-label="مساحة إعلانية"><span>مساحة إعلانية</span></div>
+
+  <header class="text-center mb-4">
+    <div class="text-5xl">💣</div>
+    <h1 class="text-3xl font-extrabold text-amber-400 leading-tight">قنبلة اللمّة</h1>
+    <p class="text-slate-400 text-sm">Lamma Bomb · لعبة السهرة بموبايل واحد</p>
+  </header>
+
+  <main id="game">
+
+    <!-- HOME -->
+    <section id="home" class="screen active glass rounded-3xl p-5">
+      <h2 class="font-bold text-lg text-amber-300 mb-1">اختار نوع السهرة</h2>
+      <p class="text-xs text-slate-400 mb-3">كل واحد بياخد <b class="text-amber-300">سؤال واحد بس</b> ويباصي الموبايل. والأسئلة مش بتتكرر لحد ما تخلص كلها.</p>
+      <div id="packs" class="grid grid-cols-1 gap-2 mb-5"></div>
+
+      <h2 class="font-bold text-lg text-amber-300 mb-2">مدة القنبلة (سر!)</h2>
+      <div class="grid grid-cols-3 gap-2 mb-6 text-sm" id="durs">
+        <button class="dur sel rounded-2xl border border-slate-600 py-2 px-1 font-semibold" data-d="quick">سريعة<br><span class="text-[11px] opacity-80">30-45 ثانية</span></button>
+        <button class="dur rounded-2xl border border-slate-600 py-2 px-1 font-semibold" data-d="mid">متوسطة<br><span class="text-[11px] opacity-80">45-75 ثانية</span></button>
+        <button class="dur rounded-2xl border border-slate-600 py-2 px-1 font-semibold" data-d="rand">حماسية عشوائية<br><span class="text-[11px] opacity-80">30-90 ثانية</span></button>
+      </div>
+      <button id="startBtn" class="btn-main w-full rounded-2xl py-4 text-xl">أشعل الفتيل وابدأ 💣</button>
+    </section>
+
+    <!-- BOMB -->
+    <section id="play" class="screen">
+      <div class="flex items-center justify-between text-xs text-slate-400 mb-2 px-1">
+        <span id="packLabel"></span><span id="qCounter"></span>
+      </div>
+      <div class="glass rounded-3xl p-5 text-center mb-4 min-h-[170px] flex flex-col justify-center">
+        <div class="text-xs text-amber-400 mb-2">سؤالك أنت بس 👇</div>
+        <p id="qText" class="qcard display text-2xl font-extrabold leading-relaxed"></p>
+      </div>
+      <div id="bombWrap" class="flex justify-center my-2">
+        <svg id="bombSvg" viewBox="0 0 200 200" width="190" height="190" aria-hidden="true">
+          <defs>
+            <radialGradient id="bg" cx="35%" cy="30%" r="80%"><stop offset="0%" stop-color="#475569"/><stop offset="55%" stop-color="#1e293b"/><stop offset="100%" stop-color="#020617"/></radialGradient>
+            <radialGradient id="sp" ><stop offset="0%" stop-color="#fff"/><stop offset="40%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#f43f5e" stop-opacity="0"/></radialGradient>
+          </defs>
+          <g id="bombBody">
+            <circle cx="100" cy="120" r="62" fill="url(#bg)" stroke="#334155" stroke-width="2"/>
+            <ellipse cx="78" cy="95" rx="16" ry="10" fill="#fff" opacity=".14" transform="rotate(-30 78 95)"/>
+            <rect x="86" y="50" width="28" height="16" rx="4" fill="#475569"/>
+            <circle cx="100" cy="125" r="14" fill="#f59e0b" opacity=".9"/>
+            <text x="100" y="131" text-anchor="middle" font-size="18" font-weight="800" fill="#0f172a" font-family="Alexandria">؟</text>
+          </g>
+          <path d="M100 50 C 100 30, 125 28, 130 12" fill="none" stroke="#d6b27a" stroke-width="4" stroke-linecap="round"/>
+          <g class="spark"><circle cx="131" cy="11" r="14" fill="url(#sp)"/></g>
+          <g class="spark" style="animation-delay:.1s"><path d="M131 -2 L131 24 M118 11 L144 11 M122 2 L140 20 M140 2 L122 20" stroke="#fde68a" stroke-width="2" stroke-linecap="round"/></g>
+        </svg>
+      </div>
+      <button id="passBtn" class="btn-main w-full rounded-3xl py-6 text-2xl">جاوبت؟ باصي الموبايل! ⚡</button>
+      <p class="text-center text-xs text-slate-500 mt-3">الوقت مخفي... ومحدش عارف القنبلة هتنفجر عند مين 😈</p>
+    </section>
+
+    <!-- BOOM -->
+    <section id="boom" class="screen text-center">
+      <div class="glass rounded-3xl p-8">
+        <div class="boomText text-8xl mb-3">💥</div>
+        <h2 class="boomText display text-4xl font-extrabold text-rose-400 leading-snug mb-2">بووووم!</h2>
+        <p class="boomText display text-2xl font-bold mb-8">💥 انفجرت القنبلة في إيدك!</p>
+        <button id="toWheel" class="btn-main w-full rounded-3xl py-5 text-2xl">لف عجلة الأحكام 🎡</button>
+      </div>
+    </section>
+
+    <!-- WHEEL -->
+    <section id="wheelScr" class="screen text-center">
+      <div class="glass rounded-3xl p-4">
+        <h2 class="display text-2xl font-extrabold text-amber-300 mb-1">عجلة الأحكام 🎡</h2>
+        <p class="text-xs text-slate-400 mb-3">كل لفّة بتجيب أحكام جديدة من بنك فيه أكتر من 40 حكم</p>
+        <div class="relative mx-auto" style="width:min(320px,86vw);aspect-ratio:1">
+          <div class="absolute left-1/2 -translate-x-1/2 -top-2 z-10 text-3xl drop-shadow">🔻</div>
+          <canvas id="wheel" class="w-full h-full rounded-full"></canvas>
+        </div>
+        <div id="verdict" class="min-h-[84px] flex items-center justify-center my-3">
+          <p class="text-slate-400 text-sm">دوس لف وشوف نصيبك 😅</p>
+        </div>
+        <button id="spinBtn" class="btn-main w-full rounded-3xl py-4 text-xl mb-2">لف العجلة 🎡</button>
+        <div class="grid grid-cols-2 gap-2">
+          <button id="again" class="rounded-2xl py-3 font-bold border border-amber-400/60 text-amber-300">جولة جديدة 🔁</button>
+          <button id="home2" class="rounded-2xl py-3 font-bold border border-slate-600 text-slate-300">غيّر النوع 🏠</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Ad slot bottom -->
+  <div class="ad-slot my-5" aria-label="مساحة إعلانية"><span>مساحة إعلانية</span></div>
+
+  <!-- SEO / content -->
+  <article class="glass rounded-3xl p-5 mb-5 leading-8 text-[15px] text-slate-200">
+    <h2 class="display text-xl font-extrabold text-amber-400 mb-2">دليل ألعاب السهرات العائلية وكسر الجليد</h2>
+    <p class="mb-3">الألعاب الجماعية اللي بتتلعب على جهاز واحد من أبسط الطرق لتجمع العيلة والأصحاب حوالين نفس اللحظة بدل ما كل واحد يغرق في شاشته. لما الموبايل بيتنقل من إيد لإيد، بيتحول من وسيلة عزلة لأداة بتجمع الناس وبتخلق ضحك وحكايات.</p>
+    <h3 class="font-bold text-amber-300 mt-3">فوايد ألعاب الجهاز الواحد</h3>
+    <ul class="list-disc pr-5 mb-3">
+      <li><b>كسر الجليد:</b> أسئلة خفيفة بتخلي الأقارب اللي مش بيتقابلوا كتير يتكلموا ويضحكوا.</li>
+      <li><b>مشاركة كل الأعمار:</b> الصغير والكبير بيلعبوا مع بعض بنفس القواعد البسيطة.</li>
+      <li><b>تنمية سرعة البديهة:</b> التحديات القصيرة بتدرّب الذهن على التفكير السريع تحت ضغط لطيف.</li>
+      <li><b>ذكريات مشتركة:</b> الأحكام الكوميدية بتصنع مواقف بتتحكي عنها في كل لمّة جاية.</li>
+      <li><b>بدون تكلفة ولا تجهيزات:</b> مش محتاج كروت ولا أدوات، موبايل واحد يكفي.</li>
+    </ul>
+    <p>قنبلة اللمّة مصممة عشان تكون مناسبة لكل العيلة: أسئلة نظيفة، أحكام مرحة ما فيهاش إحراج جارح، وتصميم مريح للعين في السهرات الليلية.</p>
+  </article>
+
+  <section class="glass rounded-3xl p-5 mb-5" aria-labelledby="faqT">
+    <h2 id="faqT" class="display text-xl font-extrabold text-amber-400 mb-3">أسئلة شائعة</h2>
+    <div class="space-y-2">
+      <details class="rounded-2xl border border-slate-700 p-3"><summary class="flex justify-between font-bold">كيف ألعب مع الأطفال؟<span class="chev">⌄</span></summary>
+        <p class="mt-2 text-slate-300 text-sm leading-7">اختار باقة «لمّة العيلة» أو «تحدي الـ 5 ثواني»، وخلي مدة القنبلة «سريعة». الأسئلة بسيطة ومناسبة للصغار، وممكن الكبير يساعد الصغير في الإجابة. الأحكام كلها لطيفة ومناسبة للأطفال.</p></details>
+      <details class="rounded-2xl border border-slate-700 p-3"><summary class="flex justify-between font-bold">هل اللعبة تحتاج إنترنت؟<span class="chev">⌄</span></summary>
+        <p class="mt-2 text-slate-300 text-sm leading-7">بعد تحميل الصفحة مرة واحدة، اللعبة بتشتغل بكل أسئلتها وأصواتها من غير اتصال. الأصوات بتتولد مباشرة داخل المتصفح.</p></details>
+      <details class="rounded-2xl border border-slate-700 p-3"><summary class="flex justify-between font-bold">كام لاعب ينفع يلعبوا؟<span class="chev">⌄</span></summary>
+        <p class="mt-2 text-slate-300 text-sm leading-7">من 2 لحد أي عدد. كل لاعب بياخد سؤال واحد بس ويباصي الموبايل للي بعده، فالقعدة الكبيرة هتكون أحلى.</p></details>
+      <details class="rounded-2xl border border-slate-700 p-3"><summary class="flex justify-between font-bold">هل اللعبة بتجمع بياناتي؟<span class="chev">⌄</span></summary>
+        <p class="mt-2 text-slate-300 text-sm leading-7">لا. مفيش تسجيل ولا حسابات ولا تخزين لبيانات شخصية. كل حاجة بتحصل على جهازك.</p></details>
+      <details class="rounded-2xl border border-slate-700 p-3"><summary class="flex justify-between font-bold">ليه مش باقدر أشوف الوقت؟<span class="chev">⌄</span></summary>
+        <p class="mt-2 text-slate-300 text-sm leading-7">ده جزء من الفكرة! الوقت سري عشان يفضل التوتر والضحك لحد آخر لحظة، وسرعة الدقات بتزيد كل ما القنبلة تقرب تنفجر.</p></details>
+    </div>
+  </section>
+
+  <footer class="text-center text-xs text-slate-500 space-x-3 space-x-reverse">
+    <button data-modal="m-privacy" class="underline">سياسة الخصوصية</button>
+    <button data-modal="m-terms" class="underline">شروط الاستخدام</button>
+    <button data-modal="m-about" class="underline">عن اللعبة</button>
+    <p class="mt-3">© قنبلة اللمّة – Lamma Bomb</p>
+  </footer>
+</div>
+
+<!-- Modals -->
+<div id="m-privacy" class="modal"><div class="glass rounded-3xl p-5 max-w-md w-full max-h-[85vh] overflow-auto">
+  <h3 class="text-xl font-extrabold text-amber-400 mb-2">سياسة الخصوصية</h3>
+  <p class="text-sm leading-7 text-slate-300">لعبة «قنبلة اللمّة» تعمل بالكامل داخل متصفحك. لا نجمع ولا نخزن ولا نرسل أي بيانات شخصية، ولا نطلب تسجيلًا أو حسابًا. الأسئلة والأصوات والنتائج كلها محلية على جهازك. قد تعرض الصفحة إعلانات من أطراف ثالثة، وقد تستخدم هذه الأطراف ملفات تعريف الارتباط وفق سياساتها الخاصة، ويمكنك التحكم فيها من إعدادات المتصفح.</p>
+  <button class="close mt-4 w-full rounded-2xl border border-slate-600 py-2">إغلاق</button></div></div>
+<div id="m-terms" class="modal"><div class="glass rounded-3xl p-5 max-w-md w-full max-h-[85vh] overflow-auto">
+  <h3 class="text-xl font-extrabold text-amber-400 mb-2">شروط الاستخدام</h3>
+  <p class="text-sm leading-7 text-slate-300">اللعبة مخصصة للتسلية العائلية. باستخدامك لها توافق على أن الأحكام اقتراحات مرحة اختيارية ولا يجوز استخدامها لإحراج أو إيذاء أي شخص. يُنصح بالتوقف عن أي حكم يسبب إزعاجًا لأحد اللاعبين. تُقدَّم اللعبة كما هي دون ضمانات، ولا نتحمل مسؤولية عن أي استخدام خارج الغرض الترفيهي.</p>
+  <button class="close mt-4 w-full rounded-2xl border border-slate-600 py-2">إغلاق</button></div></div>
+<div id="m-about" class="modal"><div class="glass rounded-3xl p-5 max-w-md w-full max-h-[85vh] overflow-auto">
+  <h3 class="text-xl font-extrabold text-amber-400 mb-2">عن اللعبة</h3>
+  <p class="text-sm leading-7 text-slate-300">«قنبلة اللمّة» لعبة سهرات عائلية بنمط الموبايل الواحد: سؤال لكل لاعب، قنبلة بتوقيت سري، وعجلة أحكام كوميدية. فيها أكتر من 140 سؤال في 4 باقات وأكتر من 40 حكم مرح، وأصوات مصنوعة بالكامل داخل المتصفح. هدفنا نرجّع دفا اللمّة.</p>
+  <button class="close mt-4 w-full rounded-2xl border border-slate-600 py-2">إغلاق</button></div></div>
+
+<script>
+/* ================= QUESTION BANK ================= */
+const PACKS = {
+  family: { emoji:"👨‍👩‍👧‍👦", name:"لمّة العيلة", desc:"أسرار البيت وتحديات خفيفة", q:[
+    "قول أكتر أكلة ماما بتعملها وبتحبها 🍲","مين في القعدة أكتر واحد بينام بدري؟ وليه؟","احكي موقف محرج حصلك قدام العيلة 😳",
+    "اذكر 3 حاجات بتتخانق عليها مع إخواتك","مين أكتر واحد في العيلة بيتأخر دايمًا؟ ⏰","إيه أول حاجة بتعملها لما تصحى؟",
+    "إيه أغرب حاجة أكلتها في حياتك؟ 🤢","قول اسم جدك وجدتك وأعمامك بسرعة!","إيه الهدية اللي نفسك تهديها لحد في القعدة؟ 🎁",
+    "مين في القعدة أحسن واحد يطبخ؟ 👨‍🍳","قول حاجة كنت بتخاف منها وانت صغير","إيه أحلى ذكرى ليك مع العيلة؟ ❤️",
+    "قول 3 حاجات بتضايقك في البيت","مين أكتر واحد صوته عالي في البيت؟ 📢","لو معاك مليون جنيه، هتعمل بيهم إيه أول حاجة؟ 💰",
+    "إيه أكتر كذبة بيضا قلتها لماما؟ 🤥","قول عيد ميلاد أقرب حد في القعدة ليك","مين أكتر واحد بيضحك بصوت عالي؟ 😂",
+    "إيه الأكلة اللي مستحيل تاكلها؟","قلّد صوت حد من القعدة 🎭","لو بقيت مدير البيت يوم كامل، هتعمل إيه أول حاجة؟",
+    "غنّي سطرين من أغنية بتحبها 🎤","إيه المهنة اللي كان نفسك تشتغلها وانت صغير؟","إيه أحلى مصيف رحته؟ 🏖️",
+    "مين أكتر واحد بيحب النوم في العيلة؟ 😴","إيه أكتر حاجة بتحب تعملها يوم الجمعة؟","قول حاجة حلوة عن الشخص اللي على يمينك 🌸",
+    "إيه أقدم حاجة لسه محتفظ بيها؟","إيه اسم أول مدرسة روحتها؟ 🏫","إيه الحاجة اللي دايمًا بتنساها وانت خارج من البيت؟",
+    "لو هتسافر أي بلد في العالم، هتروح فين؟ ✈️","مين أكتر واحد بيحب الأكل في العيلة؟ 🍗","احكي ذكرى مضحكة من عيد مع العيلة",
+    "إيه أول موبايل كان معاك؟ 📱","اوصف بيت جدك في جملتين","إيه أكتر لقب بيناديك بيه أهلك؟",
+    "مين أكتر واحد بيحب يقعد على الترابيزة الأخيرة في الفرح؟ 💃","إيه الحاجة اللي بتعملها وانت لوحدك ومش هتعترف بيها؟ 🤫"
+  ]},
+  nostalgia: { emoji:"⏳", name:"جيل الطيبين vs الجيل الجديد", desc:"مقارنات نوستالجيا وتريندات", q:[
+    "اذكر 3 كرتون كنا نتفرج عليه زمان 📺","قول اسم لعبة كنا بنلعبها في الشارع ⚽","إيه الفرق بين الكاسيت والسبوتيفاي؟ 📼",
+    "قول اسم مسلسل رمضان قديم بتحبه 🌙","إيه أول لعبة فيديو لعبتها؟ 🎮","قول اسم تريند حالي مش فاهمه",
+    "اذكر 3 حاجات كانت موجودة زمان واختفت","إيه أحلى حاجة في الطفولة بتوحشك؟","اذكر 3 ألعاب موبايل مشهورة دلوقتي 📱",
+    "إيه الحاجة اللي كنا بنشتريها من الكشك؟","قلّد إعلان قديم بتفتكره 📢","قول اسم أغنية من أيام المراهقة 🎧",
+    "إيه الفرق بين رسالة SMS والواتساب؟","قول اسم حاجة كنت بتشتريها بربع جنيه","اذكر برنامج أطفال قديم بتحبه 🧸",
+    "اذكر 3 تطبيقات بتستخدمها كل يوم","إيه أول فيلم شفته في السينما؟ 🎬","لو رجعت بالزمن، هتروح أنهي سنة؟ ⏪",
+    "إيه أغرب تريند شفته على السوشيال ميديا؟","اذكر لعبة من ألعاب الحواري زي الاستغماية","اشرح لجدك يعني إيه ريلز 😅",
+    "إيه أول مسلسل كرتون حفظت أغنيته؟","اذكر 3 أجهزة الموبايل حل محلها (كاميرا، ساعة...)","اذكر مطرب من الزمن الجميل 🎙️",
+    "قول كلمة شباب جديدة واشرح معناها","إيه أول اسم مستخدم كان عندك على النت؟","إيه الحاجة اللي الجيل الجديد مش هيفهمها من زمان؟",
+    "اذكر 3 حاجات كنا بنعملها قبل الإنترنت","إيه أكتر حاجة فاكرها عن المدرسة زمان؟ 🎒","اذكر لاعب كورة من جيل التسعينات",
+    "إيه الفرق بين الفيديو كاسيت ونتفليكس؟","قول إفيه مشهور من فيلم كوميدي قديم 😂","إيه أحسن هدية كنت مستنيها في العيد؟ 🎁",
+    "اذكر 3 أنواع شيبسي أو حلويات زمان 🍫","مين أشهر يوتيوبر دلوقتي في رأيك؟","إيه اللي فاكره عن أول يوم جالك فيه موبايل؟",
+    "قول 3 حاجات كانت ممنوعة زمان وبقت عادية دلوقتي"
+  ]},
+  five: { emoji:"⚡", name:"تحدي الـ 5 ثواني", desc:"سرعة بديهة وأسماء أشياء", q:[
+    "قول 3 حاجات بنحطها في الفريزر ❄️ في 5 ثواني!","قول 3 أسماء بنات بتبدأ بحرف م","قول 3 حاجات لونها أحمر 🔴",
+    "قول 3 فواكه صيفي 🍉","قول 3 دول عربية","قول 3 حاجات بتلاقيها في المطبخ 🍳","قول 3 حاجات بتلاقيها في الشنطة 🎒",
+    "قول 3 أنواع أكل إيطالي 🍝","قول 3 حيوانات بتعيش في الغابة 🦁","قول 3 ماركات موبايل","قول 3 حاجات بنلبسها في الشتا 🧣",
+    "قول 3 أسماء أولاد بتبدأ بحرف أ","قول 3 وسائل مواصلات 🚌","قول 3 مشروبات ساخنة ☕","قول 3 حاجات شكلها دايرة ⭕",
+    "قول 3 مدن في مصر","قول 3 حاجات بتلاقيها في الحمام 🛁","قول 3 أنواع جبنة 🧀","قول 3 حاجات بتتباع في السوبر ماركت 🛒",
+    "قول 3 ألوان من ألوان قوس قزح 🌈","قول 3 حاجات بتطير 🦅","قول 3 مسلسلات بتحبها","قول 3 مواد دراسية 📚",
+    "قول 3 حلويات شرقي 🍯","قول 3 حاجات بتتفتح وتتقفل","قول 3 حاجات بتتعلق على الحيطة","قول 3 حاجات بتتاكل في الفطار 🥚",
+    "قول 3 حاجات بتبدأ بحرف ب","قول 3 حاجات بتتحط في الشاي 🍵","قول 3 حاجات موجودة في أوضة النوم 🛏️",
+    "قول 3 حاجات بتشتريها من الصيدلية 💊","قول 3 حاجات بنكتب بيها ✏️","قول 3 مشروبات باردة 🥤","قول 3 حاجات بنلبسها في الرجل 👟",
+    "قول 3 مهن بتبدأ بحرف م","قول 3 حاجات بتسمعها الصبح ⏰","قول 3 حاجات بتتحط في الساندوتش 🥪"
+  ]},
+  sports: { emoji:"⚽", name:"دوري القعدة", desc:"كورة ومعلومات رياضية", q:[
+    "اذكر 3 لاعبين مصريين مشهورين 🇪🇬","أكتر منتخب فاز بكأس العالم؟ 🏆","اذكر 3 أندية مصرية","كام لاعب في فريق الكورة جوه الملعب؟",
+    "اذكر 3 لاعبين لعبوا في برشلونة 🔵🔴","اذكر ملعب كورة مشهور 🏟️","إيه لون فانلة منتخب مصر الأساسية؟","اذكر 3 أندية إنجليزية",
+    "اذكر 3 رياضات غير الكورة 🏀","كام دقيقة وقت المباراة الأصلي؟ ⏱️","مين لاعب مصري احترف في ليفربول؟","اذكر 3 أندية إسبانية",
+    "إيه الكارت اللي معناه طرد؟ 🟥","اذكر 3 لاعبين تنس 🎾","اذكر 3 بطولات كورة معروفة","اذكر 3 أندية لعب فيها كريستيانو رونالدو",
+    "كام مرة فاز منتخب مصر بكأس الأمم الأفريقية؟","اذكر 3 رياضات بتتلعب بالكورة","إيه اسم الاستاد الرئيسي في القاهرة؟",
+    "كام لاعب بيلعبوا في فريق السلة جوه الملعب؟ 🏀","اذكر 3 لاعبين برازيليين 🇧🇷","اذكر اسم مدرب كورة مشهور","الكورة الطائرة بتتلعب بكام لاعب؟ 🏐",
+    "اذكر 3 أندية إيطالية","قلّد احتفال لاعب مشهور 🕺","كأس العالم 2022 اتعمل في أنهي دولة؟","اذكر 3 حراس مرمى مشهورين 🧤",
+    "مين مشجع أهلي ومين زملكاوي في القعدة؟ 😄","اذكر 3 دول أفريقية بتلعب كورة","إيه اسم الضربات اللي بتحسم المباراة بعد التعادل؟",
+    "اذكر لاعب مصري محترف بره مصر","اذكر 3 رياضات مائية 🏊","إيه اسم ملعب برشلونة؟","اذكر مدرب قاد منتخب مصر للفوز بأمم أفريقيا",
+    "كأس العالم 2018 اتعمل في أنهي دولة؟","اذكر 3 رياضات بتتلعب بمضرب 🏸"
+  ]}
+};
+
+/* ================= PUNISHMENTS (big pool) ================= */
+const PUNISH = [
+ ["اعمل شاي للقعدة كلها","☕"],["قلّد طريقة كلام حد من القعدة لمدة دقيقة","🎭"],["اغسل مواعين العشاء","🍽️"],
+ ["قول نكتة تضحك الكل وإلا تلف تاني","😂"],["قول سر صغير محدش يعرفه عنك","🤫"],["ارقص رقصة قدام الكل","💃"],
+ ["غنّي مقطع من أغنية بصوت أوبرا","🎤"],["اتكلم بالفصحى 3 دقايق","📜"],["امشي زي البطريق لآخر الأوضة","🐧"],
+ ["اعمل 10 ضغطات","💪"],["اتصل بحد من العيلة وقوله بحبك","📞"],["اتكلم بصوت عيل صغير لمدة دقيقتين","👶"],
+ ["امدح كل واحد في القعدة بجملة حلوة","🌸"],["مثّل إعلان تجاري قدام الكل","📺"],["قف على رجل واحدة وانت بتحكي حكاية","🦩"],
+ ["اعمل مكالمة وهمية مضحكة قدام الكل","☎️"],["اتكلم زي الروبوت لحد دورك الجاي","🤖"],["قلّد حيوان والكل يخمن","🦁"],
+ ["احكي أحرج موقف حصلك في المدرسة","🎒"],["نضّف الترابيزة بعد الأكل","🧽"],["حضّر عصير للكل","🥤"],
+ ["اعمل مساج للكتفين لحد من القعدة","💆"],["نفّذ طلب صغير من أصغر واحد في القعدة","👑"],["اتكلم من غير ما تحرّك شفايفك لمدة دقيقة","🤐"],
+ ["رتّب الجزم عند الباب","👟"],["قول 3 حاجات بتحبها في كل واحد جنبك","❤️"],["اعمل سيلفي بأغرب وش عندك","🤪"],
+ ["اعمل نشرة أخبار مضحكة عن البيت","📰"],["اتكلم بصوت مذيع محترف لحد دورك الجاي","🎙️"],["قلّد صوت 5 حيوانات ورا بعض","🐮"],
+ ["اشرب كوباية ميّة مرة واحدة","💧"],["اتحدى حد في حجر ورقة مقص، ولو خسرت لف تاني","✊"],["احكي حدوتة قبل النوم للكل","🌙"],
+ ["قلّد مشية حد من العيلة","🚶"],["اعمل إعلان لحاجة في الأوضة كأنك بتبيعها","🛍️"],["قول نصيحة غريبة للكل بجدية","🧠"],
+ ["اضحك 20 ثانية من غير توقف","😆"],["غيّر مكانك واقعد جنب أبعد واحد عنك","🪑"],["اتكلم بلهجة غير لهجتك لمدة دقيقة","🗣️"],
+ ["قول اسمك بالعكس واتكلم بيه لدقيقة","🔄"],["اعمل بوسة على الهوا لكل واحد في القعدة","😘"],["اعمل أغرب صوت تعرفه","🔊"],
+ ["اقعد على الأرض لحد الجولة الجاية","🧘"],["احكي فيلم بالإشارة بس والكل يخمن","🎬"],["ارفع إيديك وقول أنا أجمل واحد في العيلة بصوت عالي","🙌"]
+];
+
+/* ================= AUDIO ENGINE ================= */
+const Audio_ = (() => {
+  let ctx = null, master = null, noiseBuf = null;
+  function init(){
+    if(ctx) { if(ctx.state==='suspended') ctx.resume(); return; }
+    const AC = window.AudioContext || window.webkitAudioContext; if(!AC) return;
+    ctx = new AC(); master = ctx.createGain(); master.gain.value = .9; master.connect(ctx.destination);
+    noiseBuf = ctx.createBuffer(1, ctx.sampleRate*2, ctx.sampleRate);
+    const d = noiseBuf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+  }
+  function blip(freq,dur,type,vol,when=0,endFreq){
+    if(!ctx) return; const t=ctx.currentTime+when, o=ctx.createOscillator(), g=ctx.createGain();
+    o.type=type; o.frequency.setValueAtTime(freq,t); if(endFreq) o.frequency.exponentialRampToValueAtTime(endFreq,t+dur);
+    g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    o.connect(g); g.connect(master); o.start(t); o.stop(t+dur+.02);
+  }
+  return {
+    init,
+    tick(p){ // sharper & higher as panic grows
+      blip(1500+p*700,.035,'square',.07+p*.05); blip(300,.05,'triangle',.08);
+    },
+    pass(){ blip(880,.1,'sine',.18); blip(1320,.16,'sine',.18,.08); },
+    wheelClick(){ blip(700,.03,'triangle',.12); },
+    win(){ [523,659,784,1047].forEach((f,i)=>blip(f,.18,'sine',.16,i*.09)); },
+    explode(){
+      if(!ctx) return; const t=ctx.currentTime;
+      const n=ctx.createBufferSource(); n.buffer=noiseBuf; const lp=ctx.createBiquadFilter(); lp.type='lowpass';
+      lp.frequency.setValueAtTime(7000,t); lp.frequency.exponentialRampToValueAtTime(200,t+1.4);
+      const ng=ctx.createGain(); ng.gain.setValueAtTime(1,t); ng.gain.exponentialRampToValueAtTime(.001,t+1.5);
+      n.connect(lp); lp.connect(ng); ng.connect(master); n.start(t); n.stop(t+1.6);
+      const o=ctx.createOscillator(), g=ctx.createGain(); o.type='sine';
+      o.frequency.setValueAtTime(110,t); o.frequency.exponentialRampToValueAtTime(28,t+1.1);
+      g.gain.setValueAtTime(1.2,t); g.gain.exponentialRampToValueAtTime(.001,t+1.3);
+      o.connect(g); g.connect(master); o.start(t); o.stop(t+1.4);
+      const c=ctx.createBufferSource(); c.buffer=noiseBuf; const hp=ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=3000;
+      const cg=ctx.createGain(); cg.gain.setValueAtTime(.5,t); cg.gain.exponentialRampToValueAtTime(.001,t+.5);
+      c.connect(hp); hp.connect(cg); cg.connect(master); c.start(t+.02); c.stop(t+.6);
+    }
+  };
+})();
+
+/* ================= STATE ================= */
+const $ = s => document.querySelector(s);
+const show = id => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); $('#'+id).classList.add('active'); };
+const rnd = (a,b) => a + Math.random()*(b-a);
+const shuffle = a => { a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+const vib = p => { try{ navigator.vibrate && navigator.vibrate(p); }catch(e){} };
+
+let pack = 'family', dur = 'quick', qNum = 0, running = false, timerId = null;
+const decks = {};
+function nextQ(){
+  let d = decks[pack];
+  if(!d || d.i >= d.order.length){ d = decks[pack] = { order: shuffle(PACKS[pack].q), i:0 }; }
+  return d.order[d.i++];
+}
+
+/* ================= HOME UI ================= */
+const packsEl = $('#packs');
+Object.entries(PACKS).forEach(([k,p])=>{
+  const b=document.createElement('button');
+  b.className='pack rounded-2xl border border-slate-700 p-3 flex items-center gap-3'+(k===pack?' sel':'');
+  b.dataset.k=k;
+  b.innerHTML=`<span class="text-3xl">${p.emoji}</span><span><span class="block font-bold">${p.name}</span><span class="block text-xs text-slate-400">${p.desc} · ${p.q.length} سؤال</span></span>`;
+  b.onclick=()=>{ pack=k; document.querySelectorAll('.pack').forEach(x=>x.classList.toggle('sel',x===b)); };
+  packsEl.appendChild(b);
+});
+document.querySelectorAll('.dur').forEach(b=> b.onclick=()=>{ dur=b.dataset.d; document.querySelectorAll('.dur').forEach(x=>x.classList.toggle('sel',x===b)); });
+
+/* ================= ROUND LOGIC ================= */
+function startRound(){
+  Audio_.init(); qNum = 0;
+  const r = dur==='quick'?[30,45]: dur==='mid'?[45,75]:[30,90];
+  const total = rnd(r[0],r[1])*1000;
+  $('#packLabel').textContent = PACKS[pack].emoji+' '+PACKS[pack].name;
+  show('play'); showQ();
+  const t0 = performance.now(); let last = 0; running = true;
+  clearInterval(timerId);
+  timerId = setInterval(()=>{
+    if(!running) return;
+    const el = performance.now()-t0, p = Math.min(el/total,1);
+    const interval = 1000/(1+5*Math.pow(p,1.4)); // 1/s -> 6/s
+    document.documentElement.style.setProperty('--pulse', (interval/1000*1.0).toFixed(2)+'s');
+    document.documentElement.style.setProperty('--shake', (Math.pow(p,2.2)*7).toFixed(1)+'px');
+    if(el-last >= interval){ last = el; Audio_.tick(p); if(p>.8) vib(8); }
+    if(el >= total) explode();
+  }, 30);
+}
+function showQ(){
+  qNum++; const el=$('#qText'); el.classList.remove('qcard'); void el.offsetWidth; el.classList.add('qcard');
+  el.textContent = nextQ(); $('#qCounter').textContent = 'سؤال رقم '+qNum;
+}
+function pass(){ if(!running) return; Audio_.pass(); vib(15); showQ(); }
+function explode(){
+  running=false; clearInterval(timerId);
+  document.documentElement.style.setProperty('--shake','0px');
+  Audio_.explode(); vib([200,100,200,100,400]);
+  show('boom'); document.body.classList.remove('flash'); void document.body.offsetWidth; document.body.classList.add('flash');
+  const root=$('#root'); root.classList.remove('camshake'); void root.offsetWidth; root.classList.add('camshake');
+  setTimeout(()=>document.body.classList.remove('flash'),1000);
+}
+$('#startBtn').onclick = startRound;
+$('#passBtn').onclick = pass;
+$('#again').onclick = startRound;
+$('#home2').onclick = ()=>{ show('home'); };
+$('#toWheel').onclick = ()=>{ Audio_.init(); show('wheelScr'); spunOnce = false; buildWheel(); resetVerdict(); $('#spinBtn').textContent='لف العجلة 🎡'; };
+
+/* ================= WHEEL ================= */
+const canvas = $('#wheel'), cx = canvas.getContext('2d');
+const COLORS = ['#b45309','#be123c','#92400e','#9f1239','#a16207','#c2410c','#7c2d12','#e11d48'];
+let segs = [], rot = 0, spinning = false;
+const SEG_N = 8;
+function buildWheel(){
+  segs = shuffle(PUNISH).slice(0,SEG_N);
+  const size = 640; canvas.width=size; canvas.height=size; rot = rnd(0,Math.PI*2); drawWheel();
+}
+function drawWheel(){
+  const S=canvas.width, c=S/2, R=c-8, a=2*Math.PI/SEG_N;
+  cx.clearRect(0,0,S,S); cx.save(); cx.translate(c,c); cx.rotate(rot);
+  segs.forEach((s,i)=>{
+    cx.beginPath(); cx.moveTo(0,0); cx.arc(0,0,R,i*a,(i+1)*a); cx.closePath();
+    cx.fillStyle=COLORS[i%COLORS.length]; cx.fill(); cx.strokeStyle='#fbbf24'; cx.lineWidth=3; cx.stroke();
+    cx.save(); cx.rotate(i*a+a/2); cx.textAlign='right'; cx.textBaseline='middle';
+    cx.font='54px serif'; cx.fillText(s[1], R-24, 0);
+    cx.fillStyle='#fff7ed'; cx.font='700 25px Cairo, sans-serif';
+    const short = s[0].split(' ').slice(0,3).join(' ');
+    cx.direction='rtl'; cx.textAlign='left'; cx.fillText(short.length>20?short.slice(0,19)+'…':short, 70, 0);
+    cx.restore();
+  });
+  cx.restore();
+  for(let i=0;i<SEG_N;i++){ // pegs
+    const ang=rot+i*a, x=c+Math.cos(ang)*(R-2), y=c+Math.sin(ang)*(R-2);
+    cx.beginPath(); cx.arc(x,y,9,0,7); cx.fillStyle='#fde68a'; cx.fill();
+  }
+  cx.beginPath(); cx.arc(c,c,34,0,7); cx.fillStyle='#0f172a'; cx.fill(); cx.lineWidth=5; cx.strokeStyle='#fbbf24'; cx.stroke();
+  cx.font='34px serif'; cx.textAlign='center'; cx.textBaseline='middle'; cx.fillText('💣',c,c+2);
+}
+function idxAtPointer(){
+  const a=2*Math.PI/SEG_N, TAU=Math.PI*2;
+  let ang = ((-Math.PI/2 - rot) % TAU + TAU) % TAU;
+  return Math.floor(ang/a) % SEG_N;
+}
+function resetVerdict(){ $('#verdict').innerHTML='<p class="text-slate-400 text-sm">دوس لف وشوف نصيبك 😅</p>'; $('#spinBtn').disabled=false; $('#spinBtn').classList.remove('opacity-50'); }
+function spin(){
+  if(spinning) return; Audio_.init(); spinning=true;
+  $('#spinBtn').disabled=true; $('#spinBtn').classList.add('opacity-50');
+  $('#verdict').innerHTML='<p class="text-amber-300 font-bold">العجلة بتلف... 🤞</p>';
+  const start=rot, extra=Math.PI*2*rnd(5,8)+rnd(0,Math.PI*2), D=rnd(4600,5800), t0=performance.now();
+  let lastIdx = idxAtPointer();
+  (function frame(now){
+    const t=Math.min((now-t0)/D,1), e=1-Math.pow(1-t,3.4);
+    rot = start+extra*e; drawWheel();
+    const ix=idxAtPointer(); if(ix!==lastIdx){ lastIdx=ix; Audio_.wheelClick(); vib(6); }
+    if(t<1) requestAnimationFrame(frame);
+    else {
+      spinning=false; const w=segs[idxAtPointer()]; Audio_.win(); vib([60,40,60]);
+      $('#verdict').innerHTML=`<div class="qcard w-full rounded-2xl border border-amber-400/50 bg-amber-500/10 p-3"><div class="text-4xl">${w[1]}</div><p class="display font-extrabold text-xl leading-relaxed">${w[0]}</p></div>`;
+      $('#spinBtn').textContent='لف تاني 🎡'; $('#spinBtn').disabled=false; $('#spinBtn').classList.remove('opacity-50');
+    }
+  })(performance.now());
+}
+let spunOnce = false;
+$('#spinBtn').onclick = ()=>{ if(spinning) return; if(spunOnce){ segs = shuffle(PUNISH).slice(0,SEG_N); } spunOnce = true; spin(); };
+
+/* ================= MODALS ================= */
+document.querySelectorAll('[data-modal]').forEach(b=> b.onclick=()=>$('#'+b.dataset.modal).classList.add('open'));
+document.querySelectorAll('.modal').forEach(m=> m.addEventListener('click',e=>{ if(e.target===m||e.target.classList.contains('close')) m.classList.remove('open'); }));
+</script>
+</body>
+</html>
